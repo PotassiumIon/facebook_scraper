@@ -1,7 +1,9 @@
-# HTML scraper for facebook images
+# HTML Scraper for Facebook Profile
 
 ## About
 Scrapes a single Facebook profile and downloads the dates, posts, images and video links to a local folder.
+
+Doesn't require facebook graph api, but it can only scrape what is publicly available through the mobile site.
 
 ## Requirements
 NodeJS
@@ -15,7 +17,7 @@ Click on the feeds tab
 
 Scroll down until you have all the wanted posts loaded onto the page
 
-*tip* its faster to click and hold near the bottom of the scrollbar to continuously scroll
+***LIFE HACK: You can automatically scroll by clicking and holding the left mouse button near the bottom of the scroll bar, and while holding the left mouse button click the right mouse button. As long as you don't interact with the broswer, it should continue to scroll.***
 
 Right click the page and click inspect
 
