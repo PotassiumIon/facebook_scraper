@@ -11,6 +11,6 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.26.1",
-    "node-html-parser": "^5.3.3"
+    "jsdom": "^19.0.0"
   }
 }

@@ -25,7 +25,7 @@ Wait for the code to appear
 
 Select all the code in the diolog box that appears
 
-Paste the copied text into a input.txt file
+Paste the copied text into the input.html file in the root folder of the project
 
 In your terminal, navigate to the root folder of this project
 
