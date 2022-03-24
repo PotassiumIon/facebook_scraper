@@ -64,10 +64,10 @@ class FacebookScraper {
                     outputFolder = path.resolve(this.outputsFolder, parsedDate);
                     if (!fs.existsSync(outputFolder)) fs.mkdirSync(outputFolder);
                     outputFile = path.resolve(outputFolder, "post.txt");
-                    this.log("TIMESTAMP: " + element.textContent, outputFile);
+                    this.log("TIMESTAMP: " + parsedDate, outputFile);
                     break;
                 case 'P':
-                    let caption = element.textContent.trim();
+                    let caption = element.textContent.trim().replace(/\s\s+/g, ' ').replace(/\n\s*\n/g, '\n');
                     if (outputFile) this.log("CAPTION: " + caption, outputFile);
                     break;
                 case 'DIV':
