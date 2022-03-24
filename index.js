@@ -1,4 +1,3 @@
-// const HTMLParser = require('node-html-parser');
 const JSDOM = require('jsdom').JSDOM;
 const fs = require('fs');
 const axios = require('axios').default;
@@ -13,24 +12,15 @@ class FacebookScraper {
     static instance = new FacebookScraper();
 
     constructor() {
-        this.resultsFolder = path.resolve(__dirname, 'results');
-        this.downloadFolder = path.resolve(__dirname, 'results/downloads');
+        this.outputsFolder = path.resolve(__dirname, 'outputs');
         this.inputFile = path.resolve(__dirname, 'input.html');
-        this.outputFile = path.resolve(__dirname, 'results/output.txt');
-        this.videosFile = path.resolve(__dirname, 'results/videoURLs.txt');
-        this.imagesFile = path.resolve(__dirname, 'results/imageURLs.txt');
+        this.videosFile = path.resolve(__dirname, 'outputs/videoURLs.txt');
+        this.imagesFile = path.resolve(__dirname, 'outputs/imageURLs.txt');
         this.errorLogFile = path.resolve(__dirname, 'errorlog.txt');
         this.facebookVideoPath = 'https://www.facebook.com/watch/?v=';
-        this.data = this.readFile(this.inputFile);
-        this.window = new JSDOM(this.data).window;
-        this.document = this.window.document;
 
-        if (!fs.existsSync(path.resolve(__dirname, 'results'))) {
-            fs.mkdirSync(path.resolve(__dirname, 'results'))
-        }
-
-        if (!fs.existsSync(this.downloadFolder)) {
-            fs.mkdirSync(this.downloadFolder);
+        if (!fs.existsSync(this.outputsFolder)) {
+            fs.mkdirSync(this.outputsFolder);
         }
 
         this.scrape();
@@ -41,31 +31,51 @@ class FacebookScraper {
      */
     async scrape() {
 
-        const elements = this.document.getElementsByTagName('*');
+        const data = this.readFile(this.inputFile);
+        const window = new JSDOM(data).window;
+        const document = window.document;
+        const body = document.body;
+        const elements = body.getElementsByTagName('*');
 
-        for (let i = 0; i < elements.length; i++) {
-            let element = elements[i];
-
-            switch (element.tagName) {
-                case 'ABBR':
-                    this.log("DATE: " + element.textContent, this.outputFile);
-                    break;
-                case 'P':
-                    this.log(element.textContent, this.outputFile);
-                    break;
-                case 'DIV':
-                    await this.processVideo(element);
-                    break;
-                case 'I':
-                    await this.processImage(element);
-                    break;
-                default:
-            }
-
-        }
+        this.processElements(elements);
 
         console.log("Operation Complete");
 
+    }
+
+    /**
+     * Processes a list of elements
+     * @param {HTMLCollectionOf<Element>} elements 
+     */
+    async processElements(elements) {
+
+        let outputFolder = null;
+        let outputFile = null;
+
+        for (let i = 0; i < elements.length; i++) {
+            let element = elements.item(i);
+
+            switch (element.tagName) {
+                case 'ABBR':
+                    let unparsedDate = element.textContent;
+                    let parsedDate = unparsedDate.replace(/\s+/g, '').replace(',', '-').replace('at', '-').replace(':', '');
+                    outputFolder = path.resolve(this.outputsFolder, parsedDate);
+                    if (!fs.existsSync(outputFolder)) fs.mkdirSync(outputFolder);
+                    outputFile = path.resolve(outputFolder, "post.txt");
+                    this.log("TIMESTAMP: " + element.textContent, outputFile);
+                    break;
+                case 'P':
+                    if (outputFile) this.log("CAPTION: " + element.textContent, outputFile);
+                    break;
+                case 'DIV':
+                    if (outputFile) await this.processVideo(element, outputFolder, outputFile);
+                    break;
+                case 'I':
+                    if (outputFile) await this.processImage(element, outputFolder, outputFile);
+                    break;
+                default:
+            }
+        }
     }
 
     /**
@@ -84,18 +94,20 @@ class FacebookScraper {
         return data;
     }
 
-    
+
     /**
      * Srapes a facebook I element.
      * @param {Element} element a facebook I element
+     * @param {String} outputFolder path to output folder
+     * @param {String} outputFile path to output file
      */
-    async processImage(element) {
+    async processImage(element, outputFolder, outputFile) {
         let encodedImgURL = this.getImageURL(element);
         let decodedImgURL = this.decodeImageURL(encodedImgURL);
         if (decodedImgURL) {
-            await this.processURL(decodedImgURL);
             this.log(decodedImgURL, this.imagesFile);
-            this.log("IMAGE URL: " + decodedImgURL, this.outputFile);
+            this.log("IMAGE URL: " + decodedImgURL, outputFile);
+            await this.processURL(decodedImgURL, outputFolder);
         }
     }
 
@@ -131,15 +143,55 @@ class FacebookScraper {
     }
 
     /**
+     * Downloads the file and writes it to the specified path
+     * @param {String} url 
+     * @param {String} path 
+     */
+    async downloadFile(url, path) {
+        try {
+            const response = await axios({
+                method: "GET",
+                url: url,
+                responseType: "stream",
+            });
+
+            await response.data.pipe(fs.createWriteStream(path));
+
+        } catch (err) {
+            this.log(err.stack, this.errorLogFile);
+        }
+    }
+
+    /**
+     *  Scrapes div for video information
+     * @param {Element} element div element with video information
+     * @param {String} outputFolder path to the output folder
+     * @param {String} outputFile path to the output file
+     */
+    async processVideo(element, outputFolder, outputFile) {
+        const videoURL = this.getVideoURL(element);
+        const videoID = this.getVideoID(element);
+
+        if (videoID) this.log(`CLICKABLE VIDEO URL: ${this.facebookVideoPath}${videoID}`, outputFile);
+
+        if (videoURL) {
+            this.log("VIDEO URL: " + videoURL, outputFile);
+            this.log(videoURL, this.videosFile);
+            this.processURL(videoURL, outputFolder);
+        }
+    }
+
+    /**
      * Processes an image or video url
      * @param {String} url Absolute URL to file that needs to be downloaded
+     * @param {String} folder path to the folder to download to
      */
-    async processURL(url) {
+    async processURL(url, folder) {
 
         const fileName = this.getFileName(url);
 
         if (fileName) {
-            const filePath = path.resolve(this.downloadFolder, fileName);
+            const filePath = path.resolve(folder, fileName);
 
             await this.downloadFile(url, filePath);
         }
@@ -163,47 +215,12 @@ class FacebookScraper {
         return fileName;
     }
 
-
-
-    /**
-     * Downloads the file and writes it to the specified path
-     * @param {String} url 
-     * @param {String} path 
-     */
-    async downloadFile(url, path) {
-        try {
-            const response = await axios({
-                method: "GET",
-                url: url,
-                responseType: "stream",
-            });
-
-            await response.data.pipe(fs.createWriteStream(path));
-
-        } catch (err) {
-            this.log(err.stack, this.errorLogFile);
-        }
-    }
-
-    /**
-     * Logs data to a local file
-     * @param {String} message data to be logged
-     * @param {String} file path to output file
-     */
-    log(message, file) {
-        try {
-            fs.appendFileSync(file, `\n\n${message}`);
-        } catch (e) {
-            console.log(err, err.stack);
-        }
-    }
-
     /**
      * Gets the video URL from the element
      * @param {Element} element 
      * @returns {String} The resulting url
      */
-     getVideoURL(element) {
+    getVideoURL(element) {
 
         let src = "";
         let dataStore = element.getAttribute('data-store');
@@ -218,25 +235,6 @@ class FacebookScraper {
     }
 
     /**
-     *  Scrapes div for video information
-     * @param {Element} element 
-     */
-    async processVideo(element) {
-        const videoURL = this.getVideoURL(element);
-        const videoID = this.getVideoID(element);
-
-        if (videoID) this.log(`CLICKABLE VIDEO LINK: ${this.facebookVideoPath}${videoID}`, this.outputFile);
-
-        if (videoURL) {
-            this.log("VIDEO SRC: " + videoURL, this.outputFile);
-            this.log(videoURL, this.videosFile);
-            this.processURL(videoURL);
-        }
-
-    }
-
-
-    /**
      * Gets video id from facebook div with video content
      * @param {HTMLParser.HTMLElement} element 
      */
@@ -249,6 +247,19 @@ class FacebookScraper {
         }
 
         return videoID;
+    }
+
+    /**
+     * Logs data to a local file
+     * @param {String} message data to be logged
+     * @param {String} file path to output file
+     */
+    log(message, file) {
+        try {
+            fs.appendFileSync(file, `\n\n${message}`);
+        } catch (e) {
+            console.log(e, e.stack);
+        }
     }
 
 }

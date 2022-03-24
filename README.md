@@ -35,4 +35,4 @@ Run `npm install` in the commands line
 
 Run `npm start` in the command line
 
-The output will be saved to a results folder in the root of this project
+The output will be saved to the outputs folder in the root of this project
