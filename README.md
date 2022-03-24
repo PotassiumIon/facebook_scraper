@@ -36,3 +36,5 @@ Run `npm install` in the commands line
 Run `npm start` in the command line
 
 The output will be saved to the outputs folder in the root of this project
+
+**NOTE: Program must be run soon after copying the document because the program reuses tokens access to videos and images. These tokens expire after awhile.**
