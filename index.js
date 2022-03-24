@@ -39,7 +39,7 @@ class FacebookScraper {
         const body = document.body;
         const elements = body.getElementsByTagName('*');
 
-        this.processElements(elements);
+        await this.processElements(elements);
 
         console.log("Operation Complete");
 
@@ -67,7 +67,8 @@ class FacebookScraper {
                     this.log("TIMESTAMP: " + element.textContent, outputFile);
                     break;
                 case 'P':
-                    if (outputFile) this.log("CAPTION: " + element.textContent, outputFile);
+                    let caption = element.textContent.trim();
+                    if (outputFile) this.log("CAPTION: " + caption, outputFile);
                     break;
                 case 'DIV':
                     if (outputFile) await this.processVideo(element, outputFolder, outputFile);
