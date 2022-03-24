@@ -161,6 +161,7 @@ class FacebookScraper {
             await response.data.pipe(fs.createWriteStream(path));
 
         } catch (err) {
+            this.log(url, this.errorLogFile);
             this.log(err.stack, this.errorLogFile);
         }
     }
