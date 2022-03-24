@@ -16,7 +16,7 @@ class FacebookScraper {
         this.inputFile = path.resolve(__dirname, 'input.html');
         this.videosFile = path.resolve(__dirname, 'outputs/videoURLs.txt');
         this.imagesFile = path.resolve(__dirname, 'outputs/imageURLs.txt');
-        this.errorLogFile = path.resolve(__dirname, 'errorlog.txt');
+        this.errorLogFile = path.resolve(__dirname, 'outputs/errorlog.txt');
         this.facebookVideoPath = 'https://www.facebook.com/watch/?v=';
 
         if (!fs.existsSync(this.outputsFolder)) {
