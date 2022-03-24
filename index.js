@@ -31,6 +31,8 @@ class FacebookScraper {
      */
     async scrape() {
 
+        console.log("Operation Started");
+
         const data = this.readFile(this.inputFile);
         const window = new JSDOM(data).window;
         const document = window.document;
@@ -263,5 +265,3 @@ class FacebookScraper {
     }
 
 }
-
-module.exports = FacebookScraper.instance;
