@@ -21,7 +21,7 @@ Scroll down until you have all the wanted posts loaded onto the page
 
 Right click the page and click inspect
 
-On the right hand side right click the `<body>` tag and click edit as html
+On the right hand side right click the `<html>` tag and click edit as html
 
 Wait for the code to appear
 
