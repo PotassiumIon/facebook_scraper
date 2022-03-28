@@ -60,8 +60,9 @@ class FacebookScraper {
             switch (element.tagName) {
                 case 'ABBR':
                     let unparsedDate = element.textContent;
-                    let parsedDate = unparsedDate.replace(/\s+/g, '').replace(',', '-').replace('at', '-').replace(':', '');
-                    outputFolder = path.resolve(this.outputsFolder, parsedDate);
+                    let parsedDate = unparsedDate.replace(/\s+/g, '').replace(',', '-').replace('at', '-').replace(':', '').split("-");
+                    let formattedDate = parsedDate[1] + "-" + parsedDate[0] + "-" + parsedDate[2];
+                    outputFolder = path.resolve(this.outputsFolder, formattedDate);
                     if (!fs.existsSync(outputFolder)) fs.mkdirSync(outputFolder);
                     outputFile = path.resolve(outputFolder, "post.txt");
                     this.log("TIMESTAMP: " + parsedDate, outputFile);
